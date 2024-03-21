@@ -109,8 +109,9 @@ def testFeature():
 def setupLocators():
     locators = mc.textField(controlObjectListTxt, q = True, tx = True).split('|')
     for loc in locators:
-        mc.addAttr(loc, at="bool", ln="String_On_Off")
-        mc.setAttr(f'{loc}.String_On_Off', True)
+        if mc.getAttr(f'{loc}.String_On_Off', type = True) == None:
+            mc.addAttr(loc, at="bool", ln="String_On_Off")
+            mc.setAttr(f'{loc}.String_On_Off', True)
 
 #Get the name of the bifrost graph you would like to use
 def setGraphToUse(txtField):
@@ -164,7 +165,8 @@ def connectControllers(connect, ctrlName = None):
                 mc.disconnectAttr(controlObjectList[i] + '.String_On_Off', graph + '.AnchorStates[{0}]'.format(i))
 
                 # Disconnect all connections to the second parameter
-                connections = mc.listConnections(f'{graph}.Order', plugs=True, source=False, destination=True)
+                connections = mc.listConnections(f'{graph}.Order', plugs=True, source=True, destination=False)
+                print(connections)
                 if connections:
                     for connection in connections:
                         mc.disconnectAttr(connection, f'{graph}.Order')
