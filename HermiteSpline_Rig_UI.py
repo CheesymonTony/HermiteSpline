@@ -84,20 +84,51 @@ mc.button(l = 'Make Joints!', c = "execution()", p = executionSectionJoints)
 mc.button(l = 'Test Feature', c = "testFeature()", p = executionSectionJoints)
 
 
+def confirm_prompt():
+    """Function to display a confirmation dialog."""
+    result = mc.confirmDialog(
+        title='Confirm',
+        message='Would you like to replace the current rig?',
+        button=['Yes','No'],
+        defaultButton='Yes',
+        cancelButton='No',
+        dismissString='No')
+
+    if result == 'Yes':
+        replaceCurrentRigController()
+    else:
+        setupOrder()
+
+def replaceCurrentRigController():
+    mc.select('HermiteControlRig')
+    mc.delete()
+    makeControllerObject()
+
+def makeControllerObject():
+
+    rigName = 'HermiteControlRig'
+    rigMainControl = mc.circle(n = rigName, r = 5, )
+    mc.xform(ro = (90, 0, 0) )
+    mc.makeIdentity(a = 1)
+    mc.addAttr(rigMainControl, dt="string", ln="order")
+    setupOrder()
+
+
+def setupOrder():
+    controlObjectList = mc.textField(controlObjectListTxt, q=True, tx=True).split('|')
+    order = [str(i) for i in range(len(controlObjectList))]
+    mc.setAttr('HermiteControlRig.order', ",".join(order), type="string")
+
 def createMainController():
     controlObjectList = mc.textField(controlObjectListTxt, q = True, tx = True).split('|')
 
     #connecting main rig Controller to bfgraph node and adding order attribute
-    rigName = 'TestRig'
-    rigMainControl = mc.circle(n = rigName, r = 5, )
-    mc.xform(ro = (90, 0, 0) )
-    mc.makeIdentity(a = 1)
-
-    mc.addAttr(rigMainControl, dt="string", ln="order")
-    relative = mc.listRelatives(rigMainControl)
-    print(relative)
-
-    mc.setAttr(f'{rigName}.order', ",".join([str(i) for i in range(len(controlObjectList))]) , type = "string")
+    rigName = 'HermiteControlRig'
+    if not mc.objExists(rigName):
+        makeControllerObject()
+    else:
+        mc.warning('Main Controller already exists')
+        confirm_prompt()
     return rigName
 
     
@@ -109,7 +140,9 @@ def testFeature():
 def setupLocators():
     locators = mc.textField(controlObjectListTxt, q = True, tx = True).split('|')
     for loc in locators:
-        if mc.getAttr(f'{loc}.String_On_Off', type = True) == None:
+        print('made it in')
+        if not mc.attributeQuery('String_On_Off', node=loc, exists=True):
+            print('adding attribute')
             mc.addAttr(loc, at="bool", ln="String_On_Off")
             mc.setAttr(f'{loc}.String_On_Off', True)
 
@@ -137,7 +170,7 @@ def setupRigComponents():
 
 '''Connect the controller objects to the input of the bifrost graph'''
 def connectControllers(connect, ctrlName = None):
-    
+    print('connectControllers')
     if mc.textField(bifrostName, q = True, tx = True) == '':
         mc.warning('Please choose a Bifrost Graph')
     elif mc.textField(controlObjectListTxt, q = True, tx = True) == '':
@@ -152,9 +185,12 @@ def connectControllers(connect, ctrlName = None):
         if connect:
             for i in range(len(controlObjectList)):
                 print(controlObjectList[i])
-                mc.connectAttr(controlObjectList[i] + '.worldMatrix[0]', graph + '.in_Matrices_one[{0}]'.format(i), f=True)
-                mc.connectAttr(controlObjectList[i] + '.String_On_Off', graph + '.AnchorStates[{0}]'.format(i), f=True)
-            mc.connectAttr(f'{ctrlName}.order', f'{graph}.Order')
+                if not mc.isConnected(controlObjectList[i] + '.worldMatrix[0]', graph + '.in_Matrices_one[{0}]'.format(i)):
+                    mc.connectAttr(controlObjectList[i] + '.worldMatrix[0]', graph + '.in_Matrices_one[{0}]'.format(i), f=True)
+                if not mc.isConnected(controlObjectList[i] + '.String_On_Off', graph + '.AnchorStates[{0}]'.format(i)):
+                    mc.connectAttr(controlObjectList[i] + '.String_On_Off', graph + '.AnchorStates[{0}]'.format(i), f=True)
+            if not mc.isConnected(f'{ctrlName}.order', f'{graph}.Order'):
+                mc.connectAttr(f'{ctrlName}.order', f'{graph}.Order')
             mc.setAttr(graph + '.reset', False)
             mc.setAttr(graph + '.HermiteCurveSamples', mc.intField(curveSamples, q=True, v=True))
             mc.setAttr(graph + '.outSamples', mc.intField(outputSamples, q=True, v=True))
