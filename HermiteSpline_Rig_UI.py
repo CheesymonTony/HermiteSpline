@@ -134,7 +134,8 @@ def createMainController():
     
 
 def testFeature():
-    print('test feature')
+    for obj in mc.ls(sl=1):
+        mc.setAttr(f'{obj}.String_On_Off', edit=True, keyable=True)
     
 
 def setupLocators():
