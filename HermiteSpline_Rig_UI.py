@@ -225,7 +225,7 @@ def connectOutputJoints():
         joint = mc.createNode('joint', name='bn_spline{0}'.format(i))
         
         mc.connectAttr(graph + '.translate[{0}]'.format(i), joint + '.translate', f=1)
-        # mc.connectAttr(graph + '.rotate[{0}]'.format(i), joint + '.rotate', f=1)
+        mc.connectAttr(graph + '.rotate[{0}]'.format(i), joint + '.rotate', f=1)
         mc.connectAttr(graph + '.scale[{0}]'.format(i), joint + '.scale', f=1)
 
 
